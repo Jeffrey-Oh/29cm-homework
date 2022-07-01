@@ -3,9 +3,9 @@ package kr.co._29cm.homework;
 import kr.co._29cm.homework.application.items.ItemsFacade;
 import kr.co._29cm.homework.application.order.OrderFacade;
 import kr.co._29cm.homework.common.exception.SoldOutException;
-import kr.co._29cm.homework.domain.items.Items;
 import kr.co._29cm.homework.domain.items.ItemsInfo;
 import kr.co._29cm.homework.domain.order.OrderCommand;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 @ActiveProfiles("test")
 @SpringBootTest
 class MultiThreadTest {
@@ -29,73 +29,73 @@ class MultiThreadTest {
     @Autowired
     private ItemsFacade itemsFacade;
 
-    @DisplayName("멀티 쓰레드 SoldOutException 정상 동작")
-    @Test
-    void multiThreadSoldOutException() throws InterruptedException {
+    class PaymentTest implements Runnable {
 
-        CountDownLatch countDownLatch = new CountDownLatch(10);
+        @Override
+        public void run() {
 
-        AtomicReference<SoldOutException> failure = new AtomicReference<>();
+            // 중복으로 구매할 아이템 토큰 값
+            String itemToken = "WelKARNudsif";
 
-        // 중복으로 구매할 아이템 토큰 값
-        String itemToken = "xclansklrSSr";
+            List<OrderCommand.RegisterOrderItem> orderItemList = List.of(
+                OrderCommand.RegisterOrderItem.builder()
+                    .itemToken(itemToken)
+                    .itemPrice(238000L)
+                    .itemName("BS 02-2A DAYPACK 26 (BLACK)")
+                    .orderCount(2)
+                    .build()
+            );
 
-        List<OrderCommand.RegisterOrderItem> orderItemList = List.of(
-            OrderCommand.RegisterOrderItem.builder()
-                .itemToken(itemToken)
-                .itemPrice(33250L)
-                .itemName("20SS 오픈 카라/투 버튼 피케 티셔츠 (6color)")
-                .orderCount(10)
-                .build()
-        );
+            // 주문 처리
+            String orderToken = orderFacade.register(OrderCommand.RegisterOrder.builder()
+                .orderItemList(orderItemList)
+                .build());
 
-        for (int i=0; i<10; i++) {
-            new Thread(() -> {
+            // 결제 처리
+            OrderCommand.PaymentRequest paymentRequest = OrderCommand.PaymentRequest.builder()
+                .orderToken(orderToken)
+                .build();
 
-                // 주문 처리
-                String orderToken = orderFacade.register(OrderCommand.RegisterOrder.builder()
-                    .orderItemList(orderItemList)
-                    .build());
+            ItemsInfo.ItemsInfoAll itemsInfoAll = itemsFacade.getItems(itemToken);
 
-                System.out.println("------------------------------");
-                System.out.println("orderToken : " + orderToken);
-                System.out.println("------------------------------");
+            OrderCommand.PaymentResponse paymentResponse = orderFacade.payment(paymentRequest);
 
-                // 결제 처리
-                OrderCommand.PaymentRequest paymentRequest = OrderCommand.PaymentRequest.builder()
-                    .orderToken(orderToken)
-                    .build();
+            System.out.println("현재 스레드 : " + Thread.currentThread());
+            System.out.println("남은 수량 : " + itemsInfoAll.getStock());
+            System.out.println("주문 내역 : ");
+            paymentResponse.getOrderItemsInfo().forEach(System.out::println);
+            System.out.println("------------------------------");
 
-                ItemsInfo.ItemsInfoAll itemsInfoAll = itemsFacade.getItems(itemToken);
 
-                try {
-                    OrderCommand.PaymentResponse paymentResponse = orderFacade.payment(paymentRequest);
-
-                    System.out.println("------------------------------");
-                    System.out.println(System.currentTimeMillis());
-                    System.out.println("남은 수량 : " + itemsInfoAll.getStock());
-                    System.out.println("------------------------------");
-
-                    paymentResponse.getOrderItemsInfo().forEach(System.out::println);
-                } catch (SoldOutException e) {
-                    failure.set(e);
-                }
-
-                System.out.println("Current Thread name : " + Thread.currentThread().getName());
-
-                countDownLatch.countDown();
-
-            }).start();
         }
 
-        countDownLatch.await();
+    }
+
+    @DisplayName("멀티 쓰레드 SoldOutException 정상 동작")
+    @Test
+    void multiThreadSoldOutException() throws Exception {
+
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        CountDownLatch countDownLatch = new CountDownLatch(10);
 
         Assertions.assertThrows(SoldOutException.class, () -> {
-            if (failure.get() != null) {
-                throw failure.get();
-            }
-        });
 
+            for (int i=0; i<10; i++) {
+                try {
+                    executorService.submit(new PaymentTest()).get();
+                    countDownLatch.countDown();
+                } catch (Exception e) {
+                    if (e.getCause() instanceof SoldOutException) {
+                        log.error("Exception : {}", e.getCause().getClass().getName());
+                        log.error("Message : {}", e.getCause().getMessage());
+                        throw e.getCause();
+                    }
+                }
+            }
+
+            countDownLatch.await();
+
+        });
     }
 
 }

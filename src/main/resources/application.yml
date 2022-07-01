@@ -14,7 +14,7 @@ spring:
     password: order-pass
 
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: none
 
@@ -32,4 +32,4 @@ spring:
 
 logging:
   level:
-    root: info
+    root: warn
