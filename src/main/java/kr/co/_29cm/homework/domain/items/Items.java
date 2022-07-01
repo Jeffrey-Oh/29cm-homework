@@ -1,8 +1,8 @@
 package kr.co._29cm.homework.domain.items;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import kr.co._29cm.homework.common.util.TokenGenerator;
+import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.persistence.*;
 
@@ -10,6 +10,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor
 @Table(name = "items")
+@ToString
 public class Items {
 
     @Id
@@ -31,6 +32,21 @@ public class Items {
         END_OF_SALE("판매종료");
 
         private final String description;
+    }
+
+    @Builder
+    public Items(String itemNo, String itemName, Long price, int stock) {
+        if (StringUtils.isBlank(itemNo)) throw new IllegalArgumentException("empty itemNo");
+        if (StringUtils.isBlank(itemName)) throw new IllegalArgumentException("empty itemName");
+        if (price == null) throw new IllegalArgumentException("empty price");
+        if (stock < 0) throw new IllegalArgumentException("empty stock");
+
+        this.itemToken = TokenGenerator.randomCharacter(12);
+        this.itemNo = itemNo;
+        this.itemName = itemName;
+        this.price = price;
+        this.stock = stock;
+        this.status = Status.ON_SALE;
     }
 
     /**

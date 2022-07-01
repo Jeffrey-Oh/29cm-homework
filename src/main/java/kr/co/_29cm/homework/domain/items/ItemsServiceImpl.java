@@ -42,17 +42,14 @@ public class ItemsServiceImpl implements ItemsService {
      * 판매 가능한 재고가 있는지 수량 전체 확인
      */
     @Override
-    @Transactional(readOnly = true)
     public void checkAffordStock(List<OrderItems> orderItemsList) {
         AtomicBoolean result = new AtomicBoolean(true);
 
-        orderItemsList.stream().map(orderItems -> {
+        orderItemsList.forEach(orderItems -> {
             Items items = itemsReader.getItems(orderItems.getItemToken());
 
             if (items.getStock() - orderItems.getOrderCount() < 0)
                 result.set(false);
-
-            return result.get();
         });
 
         if (!result.get()) throw new SoldOutException();
@@ -62,7 +59,6 @@ public class ItemsServiceImpl implements ItemsService {
      * 판매 후 재고 수량 변경
      */
     @Override
-    @Transactional
     public void changeStockAfterSell(List<OrderItems> orderItemsList) {
         for (OrderItems orderItems : orderItemsList) {
             Items items = itemsReader.getItems(orderItems.getItemToken());

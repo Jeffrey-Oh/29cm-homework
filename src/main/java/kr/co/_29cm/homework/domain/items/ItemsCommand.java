@@ -8,8 +8,8 @@ public class ItemsCommand {
     @Getter
     @Builder
     public static class ItemsChangeStockAfterSellRequest {
-        private String itemToken;
-        private int changeStock;
+        private final String itemToken;
+        private final int changeStock;
     }
 
 }

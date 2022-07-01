@@ -35,7 +35,7 @@ public class OrderProgram {
     private final ItemsFacade itemsFacade;
     private final OrderFacade orderFacade;
 
-    void start() {
+    public void start() {
 
         // 프로그램 시작
         while (true) {
@@ -126,7 +126,6 @@ public class OrderProgram {
 
                     // 재고 파악
                     if (itemsFacade.getItems(itemsInfoAll.getItemToken()).getStock() < Integer.parseInt(orderCount)) {
-                        System.out.println(SOLD_OUT_MESSAGE);
                         checkSoldOut = true;
                         break;
                     } else {
@@ -160,11 +159,13 @@ public class OrderProgram {
                 
             }
 
-            if (orderItemList.size() == 0) {
+            if (checkSoldOut) {
+                System.out.println(SOLD_OUT_MESSAGE);
+            } else if (orderItemList.size() == 0) {
                 System.out.println(EMPTY_ORDER_MESSAGE);
                 System.out.println(HORIZONTAL_HYPHEN);
                 System.out.println();
-            } else if (!checkSoldOut) {
+            } else {
                 // 주문상품 등록
                 OrderCommand.RegisterOrder registerOrder = OrderCommand.RegisterOrder.builder()
                     .orderItemList(orderItemList)
