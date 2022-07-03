@@ -2,7 +2,7 @@ package kr.co._29cm.homework.application.order;
 
 import kr.co._29cm.homework.domain.items.ItemsService;
 import kr.co._29cm.homework.domain.order.OrderCommand;
-import kr.co._29cm.homework.domain.order.OrderItems;
+import kr.co._29cm.homework.domain.order.OrderItemsInfo;
 import kr.co._29cm.homework.domain.order.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,10 +25,11 @@ public class OrderFacade {
 
     @Transactional
     public synchronized OrderCommand.PaymentResponse payment(OrderCommand.PaymentRequest paymentRequest) {
-        List<OrderItems> orderItemsList = orderService.getOrderItems(paymentRequest.getOrderToken());
-        itemsService.checkAffordStock(orderItemsList);
-        itemsService.changeStockAfterSell(orderItemsList);
-        return orderService.payment(paymentRequest);
+        String orderToken = paymentRequest.getOrderToken();
+        List<OrderItemsInfo.OrderItems> orderItemsInfoAllList = orderService.getOrderItems(orderToken);
+        itemsService.checkAffordStock(orderItemsInfoAllList);
+        itemsService.changeStockAfterSell(orderItemsInfoAllList);
+        return orderService.payment(orderToken);
     }
 
 }

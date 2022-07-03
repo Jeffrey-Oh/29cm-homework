@@ -3,8 +3,8 @@ package kr.co._29cm.homework.domain.order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -15,6 +15,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStore orderStore;
     private final OrderReader orderReader;
     private final OrderItemsFactory orderItemsFactory;
+    private final OrderItemsInfoMapper orderItemsInfoMapper;
     private final PaymentProcessor paymentProcessor;
 
     @Override
@@ -25,14 +26,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderItems> getOrderItems(String orderToken) {
+    public List<OrderItemsInfo.OrderItems> getOrderItems(String orderToken) {
         Order order = orderReader.getOrder(orderToken);
-        return order.getOrderItemsList();
+        List<OrderItemsInfo.OrderItems> orderItemsList = new ArrayList<>();
+        order.getOrderItemsList().forEach(orderItems -> orderItemsList.add(orderItemsInfoMapper.of(orderItems)));
+        return orderItemsList;
     }
 
     @Override
-    public OrderCommand.PaymentResponse payment(OrderCommand.PaymentRequest paymentRequest) {
-        String orderToken = paymentRequest.getOrderToken();
+    public OrderCommand.PaymentResponse payment(String orderToken) {
         Order order = orderReader.getOrder(orderToken);
         return paymentProcessor.pay(order);
     }
