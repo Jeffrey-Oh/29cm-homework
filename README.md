@@ -80,6 +80,8 @@
 
 ### Facade 구현
 - OrderFacade 에서 Order, OrderItems 도메인을 처리하기위한 도메인 서비스와 상품의 재고 수량의 문제 여부 및 정보 업데이트를 위해 item 도메인 서비스를 호출한다.
+- 결제 시에는 동기처리를 위해 synchronized 를 선언한다.
+- Lazy 처리를 위해 Transaction Annotation 을 선언한다.
 
 ### Controller 구현
 - Order 처리를 위해 Request 및 Response dto 를 OrderItemsInfo 에 정의하여 진행한다.
